@@ -1,0 +1,8 @@
+### POST Organization
+POST http://localhost:3000/organizations
+Content-Type: application/json
+
+{
+  "name": "New Organization",
+  "description": "This is a new organization created via API."
+}

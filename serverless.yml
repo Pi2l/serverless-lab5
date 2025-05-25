@@ -1,0 +1,109 @@
+# Варіанти завдань
+# Варіант 1. Реєстрація  та оновлення організації та користувача
+# POST /organizations: створення Organization (поля: orgId, name, description).
+# POST /organizations/{orgId}/users: реєстрація User (поля: userId, name, email) у організації.
+# PUT /organizations: оновлення Organization (поля: orgId, name, description).
+# PUT /organizations/{orgId}/users: оновлення User (поля: userId, name, email) у організації.
+# Збереження в DynamoDB таблицях Organizations, Users.
+# Перевірка належності userId до orgId, чи вже існує користувач з подібним email, чи вже існує організація з такою назвою
+# Повернути response з відповідним статус кодом
+
+service: serverless-lab
+
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs22.x
+
+plugins:
+  - serverless-offline
+  - serverless-dynamodb
+
+functions:
+  organizations-create:
+    handler: handler.createOrganization
+    events:
+      - httpApi:
+          path: /organizations
+          method: post
+  organizations-update:
+    handler: handler.updateOrganization
+    events:
+      - httpApi:
+          path: /organizations
+          method: put
+  organizations-users-create:
+    handler: handler.createUser
+    events:
+      - httpApi:
+          path: /organizations/{orgId}/users
+          method: post
+  organizations-users-update:
+    handler: handler.updateUser
+    events:
+      - httpApi:
+          path: /organizations/{orgId}/users
+          method: put
+
+resources:
+  Resources:
+    OrganizationsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: organizations
+        AttributeDefinitions:
+          - AttributeName: orgId
+            AttributeType: S
+          - AttributeName: name
+            AttributeType: S
+        KeySchema:
+          - AttributeName: orgId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: name-index
+            KeySchema:
+              - AttributeName: name
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+        BillingMode: PAY_PER_REQUEST
+
+    UsersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: users
+        AttributeDefinitions:
+          - AttributeName: userId
+            AttributeType: S
+          - AttributeName: orgId
+            AttributeType: S
+          - AttributeName: email
+            AttributeType: S
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: orgId-index
+            KeySchema:
+              - AttributeName: orgId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+          - IndexName: email-index
+            KeySchema:
+              - AttributeName: email
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+        BillingMode: PAY_PER_REQUEST
+
+
+custom:
+  dynamodb:
+    stages:
+      - dev
+    start:
+      port: 8000
+      inMemory: true
+      migrate: true
