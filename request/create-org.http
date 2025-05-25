@@ -6,3 +6,13 @@ Content-Type: application/json
   "name": "New Organization",
   "description": "This is a new organization created via API."
 }
+
+### PUT Organization
+PUT http://localhost:3000/organizations/
+Content-Type: application/json
+
+{
+  "orgId": "2ad9addf-767d-4021-8740-6253d2f7e0fb",
+  "name": "Updated Organization",
+  "description": "This is an updated organization description."
+}
