@@ -4,15 +4,15 @@ Content-Type: application/json
 
 {
   "name": "New User",
-  "email": "newuser@example.com"
+  "email": "newuser2@example.com"
 }
 
-### PUT Organization
-# PUT http://localhost:3000/organizations/
-# Content-Type: application/json
+### PUT User
+PUT http://localhost:3000/organizations/{orgId}/users
+Content-Type: application/json
 
-# {
-#   "orgId": "2ad9addf-767d-4021-8740-6253d2f7e0fb",
-#   "name": "Updated Organization",
-#   "description": "This is an updated organization description."
-# }
+{
+  "userId": "c706c39b-e361-4a12-843d-89ae16c4ec36",
+  "name": "Updated user name",
+  "email": "updateduser@example.com"
+}

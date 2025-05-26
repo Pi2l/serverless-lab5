@@ -139,6 +139,67 @@ module.exports.createUser = async (event) => {
   };
 }
 
+module.exports.updateUser = async (event) => {
+  const orgId = event.pathParameters.orgId;
+
+  if (!(await isOrganizationExistsById(orgId))) {
+    return {
+      statusCode: 404,
+      body: JSON.stringify({ error: 'Organization not found' }),
+    };
+  }
+  const { userId } = JSON.parse(event.body);
+  const userFromDb = await getUserById(userId);
+  console.log('userFromDb:', userFromDb);
+  if (!userFromDb) {
+    return {
+      statusCode: 404,
+      body: JSON.stringify({ error: 'User not found' }),
+    };
+  }
+
+  if (userFromDb.orgId.S !== orgId) {
+    return {
+      statusCode: 403,
+      body: JSON.stringify({ error: 'User does not belong to this organization' }),
+    };
+  }
+
+  // check if user with this email already exists
+  const { name, email } = JSON.parse(event.body);
+  if (email && email !== userFromDb.email.S && await isUserExistsByEmail(email)) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: 'User with this email already exists' }),
+    };
+  }
+  if (!name && !email) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: 'No fields to update' }),
+    };
+  }
+  await dynamoDb.send(new PutItemCommand({
+    TableName: USER_TABLE,
+    Item: {
+      userId: { S: userFromDb.userId.S },
+      orgId: { S: orgId },
+      name: { S: name ?? userFromDb.name.S },
+      email: { S: email ?? userFromDb.email.S }
+    },
+    ConditionExpression: "attribute_exists(userId)"
+  }));
+  return {
+    statusCode: 200,
+    body: JSON.stringify({
+      userId: userFromDb.userId.S,
+      orgId,
+      name: name ?? userFromDb.name.S,
+      email: email ?? userFromDb.email.S
+    }),
+  };
+}
+
 async function isOrganizationExists(name) {
   const result = await dynamoDb.send(new QueryCommand({
     TableName: ORGANIZATION_TABLE,
@@ -176,3 +237,14 @@ async function isUserExistsByEmail(email) {
   }));
   return result.Items && result.Items.length > 0;
 }
+
+async function getUserById(userId) {
+  const result = await dynamoDb.send(new QueryCommand({
+    TableName: USER_TABLE,
+    KeyConditionExpression: "userId = :userId",
+    ExpressionAttributeValues: { ":userId": { S: userId } },
+    Limit: 1
+  }));
+
+  return result.Items && result.Items.length > 0 ? result.Items[0] : null;
+}  
