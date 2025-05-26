@@ -1,0 +1,18 @@
+### POST User
+POST http://localhost:3000/organizations/{orgId}/users
+Content-Type: application/json
+
+{
+  "name": "New User",
+  "email": "newuser@example.com"
+}
+
+### PUT Organization
+# PUT http://localhost:3000/organizations/
+# Content-Type: application/json
+
+# {
+#   "orgId": "2ad9addf-767d-4021-8740-6253d2f7e0fb",
+#   "name": "Updated Organization",
+#   "description": "This is an updated organization description."
+# }

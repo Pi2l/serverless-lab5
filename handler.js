@@ -90,6 +90,55 @@ module.exports.updateOrganization = async (event) => {
   };
 };
 
+module.exports.createUser = async (event) => {
+  const orgId = event.pathParameters.orgId;
+  const { name, email } = JSON.parse(event.body);
+
+  if (!(await isOrganizationExistsById(orgId))) {
+    return {
+      statusCode: 404,
+      body: JSON.stringify({ error: 'Organization not found' }),
+    };
+  }
+
+  if (email && await isUserExistsByEmail(email)) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: 'User with this email already exists' }),
+    };
+  }
+
+  if (!name && !email) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: 'No fields to create' }),
+    };
+  }
+
+  // create a new user
+  const userId = uuidv4();
+  const user = {
+    userId,
+    orgId,
+    name,
+    email,
+  };
+  console.log('Creating user:', user);
+  await dynamoDb.send(new PutItemCommand({
+    TableName: USER_TABLE,
+    Item: {
+      userId: { S: userId },
+      orgId: { S: orgId },
+      name: { S: name },
+      email: { S: email }
+    }
+  }));
+  return {
+    statusCode: 200,
+    body: JSON.stringify(user),
+  };
+}
+
 async function isOrganizationExists(name) {
   const result = await dynamoDb.send(new QueryCommand({
     TableName: ORGANIZATION_TABLE,
@@ -105,6 +154,7 @@ async function isOrganizationExistsById(orgId) {
   const organization = await getOrganizationById(orgId);
   return organization !== null;
 }
+
 async function getOrganizationById(orgId) {
   const result = await dynamoDb.send(new QueryCommand({
     TableName: ORGANIZATION_TABLE,
@@ -114,4 +164,15 @@ async function getOrganizationById(orgId) {
   }));
 
   return result.Items && result.Items.length > 0 ? result.Items[0] : null;
+}
+
+async function isUserExistsByEmail(email) {
+  const result = await dynamoDb.send(new QueryCommand({
+    TableName: USER_TABLE,
+    IndexName: 'email-index',
+    KeyConditionExpression: "#email = :email",
+    ExpressionAttributeNames: { "#email": "email" },
+    ExpressionAttributeValues: { ":email": { S: email } },
+  }));
+  return result.Items && result.Items.length > 0;
 }
