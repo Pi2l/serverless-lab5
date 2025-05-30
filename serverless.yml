@@ -14,37 +14,22 @@ frameworkVersion: "3"
 
 provider:
   name: aws
-  runtime: nodejs22.x
-
-plugins:
-  - serverless-offline
-  - serverless-dynamodb
+  runtime: nodejs18.x
 
 functions:
-  organizations-create:
-    handler: handler.createOrganization
+  sqsHandler:
+    handler: handler.sqsHandler
     events:
-      - httpApi:
-          path: /organizations
-          method: post
-  organizations-update:
-    handler: handler.updateOrganization
-    events:
-      - httpApi:
-          path: /organizations
-          method: put
-  organizations-users-create:
-    handler: handler.createUser
-    events:
-      - httpApi:
-          path: /organizations/{orgId}/users
-          method: post
-  organizations-users-update:
-    handler: handler.updateUser
-    events:
-      - httpApi:
-          path: /organizations/{orgId}/users
-          method: put
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - UserQueue
+              - Arn
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - OrganizationQueue
+              - Arn
 
 resources:
   Resources:
@@ -98,6 +83,17 @@ resources:
               ProjectionType: ALL
         BillingMode: PAY_PER_REQUEST
 
+    UserQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: UserQueue
+        VisibilityTimeout: 30
+
+    OrganizationQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: OrganizationQueue
+        VisibilityTimeout: 30
 
 custom:
   dynamodb:
@@ -107,3 +103,17 @@ custom:
       port: 8000
       inMemory: true
       migrate: true
+  serverless-offline-sqs:
+    autoCreate: true
+    apiVersion: '2012-11-05'
+    endpoint: http://127.0.0.1:9324
+    region: us-east-1
+    accessKeyId: root
+    secretAccessKey: root
+    skipCacheInvalidation: false
+
+
+plugins:
+  - serverless-offline
+  - serverless-dynamodb
+  - serverless-offline-sqs

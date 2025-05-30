@@ -15,6 +15,13 @@ const dynamoDb = new DynamoDBClient({
 const organizationService = new OrganizationService(dynamoDb);
 const userService = new UserService(dynamoDb, organizationService);
 
+module.exports.sqsHandler = async (event) => {
+  for (const record of event.Records) {
+    console.log('Processing SQS message:', record);
+    
+  }
+}
+
 module.exports.createOrganization = async (event) => {
   const { name, description } = JSON.parse(event.body);
   let organization;
