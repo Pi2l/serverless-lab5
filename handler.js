@@ -15,15 +15,42 @@ const dynamoDb = new DynamoDBClient({
 const organizationService = new OrganizationService(dynamoDb);
 const userService = new UserService(dynamoDb, organizationService);
 
-module.exports.sqsHandler = async (event) => {
+module.exports.sqsUserHandler = async (event) => {
   for (const record of event.Records) {
     console.log('Processing SQS message:', record);
     
+    const body = JSON.parse(record.body);
+    const eventType = body.eventType;
+    switch (eventType) {
+      case 'create':
+        return createUser(body.body);
+      case 'update':
+        return updateUser(body.body);
+      default:
+        console.warn('Unknown event type:', eventType);
+    }
   }
 }
 
-module.exports.createOrganization = async (event) => {
-  const { name, description } = JSON.parse(event.body);
+module.exports.sqsOrganizationHandler = async (event) => {
+  for (const record of event.Records) {
+    console.log('Processing SQS message:', record);
+
+    const body = JSON.parse(record.body);
+    const eventType = body.eventType;
+    switch (eventType) {
+      case 'create':
+        return createOrganization(body.body);
+      case 'update':
+        return updateOrganization(body.body);
+      default:
+        console.warn('Unknown event type:', eventType);
+    }
+  }
+}
+
+const createOrganization = async (body) => {
+  const { name, description } = body;
   let organization;
 
   try {
@@ -42,11 +69,11 @@ module.exports.createOrganization = async (event) => {
   };
 };
 
-module.exports.updateOrganization = async (event) => {
-  const { orgId } = JSON.parse(event.body);
+const updateOrganization = async (body) => {
+  const { orgId } = body;
 
   try {
-    const organization = await organizationService.updateOrganization(orgId, JSON.parse(event.body));
+    const organization = await organizationService.updateOrganization(orgId, body);
     return {
       statusCode: 200,
       body: JSON.stringify(organization),
@@ -60,17 +87,11 @@ module.exports.updateOrganization = async (event) => {
   }
 };
 
-module.exports.createUser = async (event) => {
-  const orgId = event.pathParameters.orgId;
-  const { name, email } = JSON.parse(event.body);
-  const user = {
-    orgId,
-    name,
-    email,
-  };
+const createUser = async (body) => {
+  const { orgId, name, email } = body;
 
   try {
-    const createdUser = await userService.createUser(user);
+    const createdUser = await userService.createUser({ orgId, name, email });
     return {
       statusCode: 200,
       body: JSON.stringify(createdUser),
@@ -85,12 +106,12 @@ module.exports.createUser = async (event) => {
   
 }
 
-module.exports.updateUser = async (event) => {
-  const orgId = event.pathParameters.orgId;
+const updateUser = async (body) => {
+  const { orgId } = body;  
 
   try {
-    const user = JSON.parse(event.body);
-    const updatedUser = await userService.updateUser(orgId, user);
+    const { email, name, userId } = body;
+    const updatedUser = await userService.updateUser(orgId, { email, name, userId });
     return {
       statusCode: 200,
       body: JSON.stringify(updatedUser),

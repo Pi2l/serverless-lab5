@@ -18,18 +18,23 @@ provider:
 
 functions:
   sqsHandler:
-    handler: handler.sqsHandler
+    handler: handler.sqsUserHandler
     events:
       - sqs:
           arn:
             Fn::GetAtt:
               - UserQueue
               - Arn
+
+  organizationHandler:
+    handler: handler.sqsOrganizationHandler
+    events:
       - sqs:
           arn:
             Fn::GetAtt:
               - OrganizationQueue
               - Arn
+      
 
 resources:
   Resources:

@@ -6,7 +6,7 @@ function user() {
     local user_body=$2
 
     if [[ -z "$user_body" ]]; then
-        user_body='{ "orgId": "", "userId": "c706c39b-e361-4a12-843d-89ae16c4ec36", "name": "New User", "email": "newuser@example.com" }'
+        user_body='{ "orgId": "93f1a26a-f706-470d-81db-d2fb972a2d2f", "userId": "c706c39b-e361-4a12-843d-89ae16c4ec36", "name": "New User", "email": "newuser@example.com" }'
     fi
 
     case $operation in
